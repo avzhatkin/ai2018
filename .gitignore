@@ -1,0 +1,6 @@
+/**/.vs/*
+/build/*
+*.user
+/aicup-2018-cpp-cgdk/*
+/codeball2018-windows/*
+codeball2018-docs-ru.pdf
