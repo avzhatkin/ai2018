@@ -1,6 +1,6 @@
 # ai2018
-Strategy from [Russian AI Cup 2018](http://russianaicup.ru)
-Strategy source itself is just **MyStrategy.cpp** and **MyStrategy.h**, the rest is just default c++17 package provided by orgs.
+Strategy from [Russian AI Cup 2018](http://russianaicup.ru)  
+Strategy source itself is just [**MyStrategy.cpp**](MyStrategy.cpp) and [**MyStrategy.h**](MyStrategy.h), the rest is default c++17 package provided by orgs.
 ### Revisions
 1. "Dumb strategy 1" - simple hit&run logic. Still doing great in beta stage though (:
 <br>
