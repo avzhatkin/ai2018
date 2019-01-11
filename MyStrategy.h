@@ -16,6 +16,10 @@ public:
     void act(const model::Robot& me, const model::Rules& rules, const model::Game& world, model::Action& action) override;
 
     void init(const model::Rules& rules, const model::Game& game);
+
+#ifdef MY_DEBUG
+    std::string custom_rendering() override;
+#endif
     
 private:
     struct MyBot {
@@ -23,11 +27,10 @@ private:
             Forward,
             Keeper
         } role = Forward;
+        linal::vec3 target;
         linal::vec3 target_speed;
         linal::real_t jump_speed = 0.0;
         bool use_nitro = false;
-
-        size_t index = 0;
 
         bool ready = false;
     };

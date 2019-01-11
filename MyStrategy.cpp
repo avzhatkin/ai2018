@@ -77,7 +77,7 @@ real_t Entity::s_entity_e = 0.0_r;
 struct World
 {
     Entity ball;
-    vector<Entity> bots;
+    map<int, Entity> bots;
 };
 
 World s_world;
@@ -469,25 +469,24 @@ void MyStrategy::init(const model::Rules& rules, const Game& game)
     s_timestep = 1.0_r / (real_t)rules.TICKS_PER_SECOND;
     s_microstep = s_timestep / (real_t)rules.MICROTICKS_PER_TICK;
 
-    double dist = s_rules.arena.depth;
+    double dist = 0;
     int keeper = -1;
     for (auto& bot : game.robots)
     {
         Entity new_bot;
         new_bot.arena_e = (real_t)rules.ROBOT_ARENA_E;
         new_bot.mass = (real_t)rules.ROBOT_MASS;
-        s_world.bots.push_back(new_bot);
+        s_world.bots.emplace(bot.id, new_bot);
         if (!bot.is_teammate)
         {
             continue;
         }
         m_bots.emplace(bot.id, MyBot());
-        m_bots[bot.id].index = s_world.bots.size() - 1;
         vec3 bot_pos((real_t)bot.x, (real_t)bot.y, (real_t)bot.z);
-        double home_dist = bot_pos.dist(s_home_pos);
-        if (home_dist < dist)
+        double center_dist = bot_pos.len();
+        if (center_dist > dist)
         {
-            dist = home_dist;
+            dist = center_dist;
             keeper = bot.id;
         }
     }
@@ -496,56 +495,157 @@ void MyStrategy::init(const model::Rules& rules, const Game& game)
 
 void MyStrategy::act(const Robot& me, const Rules& rules, const Game& game, Action& action)
 {
-    static const real_t home_r = (real_t)rules.arena.goal_width / 1.2_r;
-
-    if (0 == game.current_tick)
-    {
-        init(rules, game);
-    }
+    static const real_t home_r = (real_t)rules.arena.goal_width / 1.4_r;
 
     if (game.current_tick != s_tick)
     {
-        m_ready = 0;
-        for (auto& bot : m_bots)
+        if (0 == game.current_tick)
         {
-            bot.second.ready = false;
+            init(rules, game);
         }
 
         for (size_t i = 0; i < game.robots.size(); ++i)
         {
-            s_world.bots[i].pos = vec3((real_t)game.robots[i].x, (real_t)game.robots[i].y, (real_t)game.robots[i].z);
-            s_world.bots[i].vel = vec3((real_t)game.robots[i].velocity_x, (real_t)game.robots[i].velocity_y, (real_t)game.robots[i].velocity_z);
+            s_world.bots[game.robots[i].id].pos = vec3((real_t)game.robots[i].x , (real_t)game.robots[i].y, (real_t)game.robots[i].z);
+            s_world.bots[game.robots[i].id].vel = vec3((real_t)game.robots[i].velocity_x, (real_t)game.robots[i].velocity_y, (real_t)game.robots[i].velocity_z);
         }
 
         s_world.ball.pos = vec3((real_t)game.ball.x, (real_t)game.ball.y, (real_t)game.ball.z);
         s_world.ball.vel = vec3((real_t)game.ball.velocity_x, (real_t)game.ball.velocity_y, (real_t)game.ball.velocity_z);
 
-        //BallTick();
-        for (real_t tick = 0; tick < 1000.0_r; ++tick)
+        Entity ball_current = s_world.ball;
+
+        for (auto& item : m_bots)
         {
-            BallTick();
+            auto& bot = item.second;
+            auto& bot_body = s_world.bots[item.first];
+            
+            s_world.ball = ball_current;
 
-            real_t radius = tick * s_rules.ROBOT_MAX_GROUND_SPEED / s_rules.TICKS_PER_SECOND;
-
-            for (auto& item : m_bots)
+            if (MyBot::Forward == bot.role)
             {
-                auto& bot = item.second;
 
-                if (bot.ready)
+//                 vec3 ball_dir = (ball_current.pos + ball_current.vel / s_rules.TICKS_PER_SECOND - s_goal_pos);
+//                 ball_dir.y = 0.;
+//                 ball_dir.normalize();
+//                 ball_dir *= rules.BALL_RADIUS;
+//                 bot.target = ball_current.pos + ball_dir;
+//                 vec3 target_dir = bot.target - bot_body.pos;
+//                 target_dir.y = 0.0_r;
+//                 double target_speed_d = 20.0_r * min(s_rules.MAX_ENTITY_SPEED, target_dir.len());
+//                 bot.target_speed = target_dir.normal() * target_speed_d;
+//                 bot.target_speed.y = 0.0_r;
+//                 bot.jump_speed = 0.0_r;
+// 
+//                 ball_dir = ball_current.pos - bot_body.pos;
+//                 ball_dir.y = 0.0_r;
+//                 if (ball_dir.len() < rules.BALL_RADIUS * 1.5_r && ball_dir.z > 0 && bot_body.pos.y < s_rules.ROBOT_RADIUS * 1.001_r) {
+//                     action.jump_speed = rules.ROBOT_MAX_JUMP_SPEED;
+//                 }
+// 
+//                 ball_dir = (ball_current.pos - bot_body.pos).normal();
+//                 ball_dir.y = 0.0_r;
+//                 if ((ball_current.vel.dot(ball_dir) - bot_body.vel.dot(ball_dir)) > 0
+//                     && bot_body.pos.dist(ball_current.pos) < ((s_rules.BALL_RADIUS + s_rules.ROBOT_RADIUS) * 1.1_r)
+//                     && ball_dir.z > 0)
+//                 {
+//                     bot.jump_speed = rules.ROBOT_MAX_JUMP_SPEED;
+//                 }
+// 
+//                 if (bot.target.y > (bot_body.pos.y + s_rules.ROBOT_RADIUS)
+//                     && bot_body.vel.normal().dot(bot.target_speed.normal()) > 0.8_r
+//                     && bot_body.pos.dist(bot.target) < (s_rules.ROBOT_MAX_JUMP_SPEED / s_rules.TICKS_PER_SECOND * 10.0_r)
+//                     && ball_dir.z > 0)
+//                 {
+//                     bot.jump_speed = rules.ROBOT_MAX_JUMP_SPEED;
+//                 }
+                bot.jump_speed = 0.0_r;
+
+                vec3 ball_dir = (ball_current.pos - s_goal_pos);
+                ball_dir.y = 0.;
+                ball_dir.normalize();
+                ball_dir *= rules.BALL_RADIUS;
+                bot.target = ball_current.pos + ball_dir;
+
+                vec3 target_dir = bot.target - bot_body.pos;
+                target_dir.y = 0.0_r;
+                double target_speed_d = s_rules.TICKS_PER_SECOND * min(s_rules.MAX_ENTITY_SPEED, target_dir.len());
+                bot.target_speed = target_dir.normal() * target_speed_d;
+                bot.target_speed.y = 0.;
+
+                ball_dir = ball_current.pos - bot_body.pos;
+                ball_dir.y = 0.0_r;
+                if (ball_dir.len() < s_rules.BALL_RADIUS * 1.5
+                    && ball_dir.z > 0
+                    && bot_body.pos.y < s_rules.ROBOT_RADIUS * 1.001_r
+                    && bot_body.vel.normal().dot(bot.target_speed.normal()) > 0.3_r)
+                {
+                    bot.jump_speed = s_rules.ROBOT_MAX_JUMP_SPEED;
+                }
+
+                ball_dir = (ball_current.pos - bot_body.pos).normal();
+                ball_dir.y = 0.0_r;
+                if ((ball_current.vel.dot(ball_dir) - bot_body.vel.dot(ball_dir)) > 0
+                    && bot_body.pos.dist(ball_current.pos) < ((s_rules.BALL_RADIUS + s_rules.ROBOT_RADIUS) * 1.1_r)
+                    && ball_dir.z > 0)
+                {
+                    bot.jump_speed = s_rules.ROBOT_MAX_JUMP_SPEED;
+                }
+            }
+
+            else if (MyBot::Keeper == bot.role)
+            {
+                vec3 ball_dir = (ball_current.pos - s_home_pos);
+                ball_dir.y = 0.0_r;
+                ball_dir.normalize();
+                bot.target = s_home_pos + ball_dir * home_r;
+                vec3 target_dir = bot.target - bot_body.pos;
+                target_dir.y = 0.0_r;
+                double target_speed_d = 10.0_r * min(s_rules.MAX_ENTITY_SPEED, target_dir.len());
+                bot.target_speed = target_dir.normal() * target_speed_d;
+                bot.target_speed.y = 0.0_r;
+                bot.jump_speed = 0.0_r;
+
+                if (ball_current.pos.z > -(s_arena.depth / 2.0_r))
                 {
                     continue;
                 }
 
-                if (vec3::dist(s_world.bots[bot.index].pos, s_world.ball.pos) <= s_rules.ROBOT_RADIUS + s_rules.BALL_RADIUS)
+                for (real_t tick = 0; tick < 100.0_r; ++tick)
                 {
-                    bot.ready = true;
-                    ++m_ready;
-                }
-            }
+                    BallTick();
 
-            if (m_bots.size() == m_ready)
-            {
-                break;
+                    if (s_world.ball.pos.dist(s_home_pos) <= home_r * 1.3_r)
+                    {
+                        vec3 def_pos = s_home_pos + vec3(0, rules.arena.goal_width / 3.0_r, 0);
+                        vec3 ball_dir = (s_world.ball.pos - def_pos);
+                        bot.target = def_pos + ball_dir.normal() * (ball_dir.len() - s_rules.BALL_RADIUS);
+                        target_dir = bot.target - bot_body.pos;
+                        target_dir.y = 0.0_r;
+                        target_speed_d = 10.0_r * min(s_rules.MAX_ENTITY_SPEED, target_dir.len());
+                        bot.target_speed = target_dir.normal() * target_speed_d;
+                        bot.target_speed.y = 0.0_r;
+
+                        break;
+                    }
+                }
+
+                ball_dir = (ball_current.pos - bot_body.pos).normal();
+                if (ball_current.vel.dot(ball_dir) > 0
+                    && bot_body.pos.dist(ball_current.pos) < ((s_rules.BALL_RADIUS + s_rules.ROBOT_RADIUS) * 1.05_r))
+                {
+                    bot.jump_speed = s_rules.ROBOT_MAX_JUMP_SPEED;
+                }
+
+                vec3 delta = bot.target - bot_body.pos;
+                delta.y = 0.0_r;
+                real_t delta_y = bot.target.y - (bot_body.pos.y + s_rules.ROBOT_RADIUS);
+                if (bot.target.y > (bot_body.pos.y + s_rules.ROBOT_RADIUS)
+                    && bot_body.vel.normal().dot(bot.target_speed.normal()) > 0.5_r
+                    && delta.len() < (s_rules.ROBOT_MAX_JUMP_SPEED / s_rules.TICKS_PER_SECOND * 2.0_r * delta_y))
+                {
+                    bot.jump_speed = s_rules.ROBOT_MAX_JUMP_SPEED;
+                }
             }
         }
 
@@ -553,7 +653,6 @@ void MyStrategy::act(const Robot& me, const Rules& rules, const Game& game, Acti
     }
 
     MyBot& me_bot = m_bots[me.id];
-    vec3 me_pos(me.x, me.y, me.z);
 
     action.target_velocity_x = me_bot.target_speed.x;
     action.target_velocity_y = me_bot.target_speed.y;
@@ -563,3 +662,53 @@ void MyStrategy::act(const Robot& me, const Rules& rules, const Game& game, Acti
 
     action.use_nitro = me_bot.use_nitro;
 }
+
+#ifdef MY_DEBUG
+std::string MyStrategy::custom_rendering()
+{
+    static vector<char> buffer(512);
+
+    auto it = m_bots.begin();
+    vec3 targets[2];
+    targets[0] = it->second.target;
+    ++it;
+    targets[1] = it->second.target;
+
+    sprintf_s(buffer.data(), buffer.size(), R"___([
+  {
+    "Sphere": {
+      "x": %lf,
+      "y": %lf,
+      "z": %lf,
+      "radius": 1.0,
+      "r": 1.0,
+      "g": 0.0,
+      "b": 0.0,
+      "a": 1.0
+    }
+  },
+  {
+    "Sphere": {
+      "x": %lf,
+      "y": %lf,
+      "z": %lf,
+      "radius": 1.0,
+      "r": 1.0,
+      "g": 0.0,
+      "b": 0.0,
+      "a": 1.0
+    }
+  }
+]
+)___"
+    , targets[0].x
+    , targets[0].y
+    , targets[0].z
+    , targets[1].x
+    , targets[1].y
+    , targets[1].z
+    );
+
+    return string(buffer.data());
+}
+#endif
