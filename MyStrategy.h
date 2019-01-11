@@ -7,12 +7,15 @@
 
 #include "Strategy.h"
 #include <map>
+#include "linal.h"
 
 class MyStrategy : public Strategy {
 public:
     MyStrategy();
 
     void act(const model::Robot& me, const model::Rules& rules, const model::Game& world, model::Action& action) override;
+
+    void init(const model::Rules& rules, const model::Game& game);
     
 private:
     struct MyBot {
@@ -22,8 +25,11 @@ private:
         } role = Forward;
     };
 
+public:
+    static int s_tick;
+
 private:
     std::map<int, MyBot> m_bots;
 };
 
-#endif
+#endif // _MY_STRATEGY_H_

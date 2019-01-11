@@ -27,19 +27,19 @@ namespace model {
             rapidjson::Value::ConstArray json_players = json["players"].GetArray();
             players.resize(json_players.Size());
             for (size_t i = 0; i < players.size(); i++) {
-                players[i].read(json_players[i]);
+                players[i].read(json_players[(int)i]);
             }
 
             rapidjson::Value::ConstArray json_robots = json["robots"].GetArray();
             robots.resize(json_robots.Size());
             for (size_t i = 0; i < robots.size(); i++) {
-                robots[i].read(json_robots[i]);
+                robots[i].read(json_robots[(int)i]);
             }
 
             rapidjson::Value::ConstArray json_nitro_packs = json["nitro_packs"].GetArray();
             nitro_packs.resize(json_nitro_packs.Size());
             for (size_t i = 0; i < nitro_packs.size(); i++) {
-                nitro_packs[i].read(json_nitro_packs[i]);
+                nitro_packs[i].read(json_nitro_packs[(int)i]);
             }
 
             ball.read(json["ball"]);

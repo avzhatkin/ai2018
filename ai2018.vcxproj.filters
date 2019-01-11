@@ -104,5 +104,8 @@
     <ClInclude Include="model\Rules.h">
       <Filter>model</Filter>
     </ClInclude>
+    <ClInclude Include="linal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
