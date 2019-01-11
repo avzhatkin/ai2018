@@ -23,7 +23,16 @@ private:
             Forward,
             Keeper
         } role = Forward;
+        linal::vec3 target_speed;
+        linal::real_t jump_speed = 0.0;
+        bool use_nitro = false;
+
+        size_t index = 0;
+
+        bool ready = false;
     };
+
+    size_t m_ready = 0;
 
 public:
     static int s_tick;

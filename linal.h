@@ -49,7 +49,7 @@ struct alignas(16) vec3
         return vec3(x / _len, y / _len, z / _len);
     }
 
-    friend vec3 normal(const vec3& v) {
+    static vec3 normal(const vec3& v) {
         return v.normal();
     }
 
@@ -57,7 +57,7 @@ struct alignas(16) vec3
         return (*this - other).len();
     }
 
-    friend real_t dist(const vec3& first, const vec3& second)  {
+    static real_t dist(const vec3& first, const vec3& second)  {
         return first.dist(second);
     }
 
@@ -65,7 +65,7 @@ struct alignas(16) vec3
         return x * other.x + y * other.y + z * other.z;
     }
 
-    friend real_t dot(const vec3& first, const vec3& second) {
+    static real_t dot(const vec3& first, const vec3& second) {
         return first.dot(second);
     }
 
@@ -78,7 +78,7 @@ struct alignas(16) vec3
         return *this;
     }
 
-    friend vec3 clamp(const vec3& v, real_t limit) {
+    static vec3 clamp(const vec3& v, real_t limit) {
         real_t div = v.len();
         if (div <= limit)
             return vec3(v);
