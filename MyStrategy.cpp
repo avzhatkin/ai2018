@@ -16,7 +16,7 @@ int MyStrategy::s_tick = -1;
 real_t s_timestep;
 real_t s_microstep;
 
-__forceinline real_t sign(real_t v)
+inline real_t sign(real_t v)
 {
     return v / abs(v);
 }
