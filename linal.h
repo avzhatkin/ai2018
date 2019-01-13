@@ -69,6 +69,14 @@ struct alignas(16) vec3
         return first.dot(second);
     }
 
+    vec3 project(const vec3& other) const {
+        return other.normal() * dot(other);
+    }
+
+    static vec3 project(const vec3& first, const vec3& second) {
+        return first.project(second);
+    }
+
     vec3& clamp(real_t limit) {
         real_t div = len();
         if (div <= limit)

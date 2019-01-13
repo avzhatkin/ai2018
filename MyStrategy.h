@@ -7,7 +7,9 @@
 
 #include "Strategy.h"
 #include <map>
+#include <list>
 #include "linal.h"
+using linal::operator""_r;
 
 class MyStrategy : public Strategy {
 public:
@@ -17,7 +19,21 @@ public:
 
     void init(const model::Rules& rules, const model::Game& game);
 
+    struct DebugSphere {
+        linal::vec3 center;
+        linal::real_t radius;
+        linal::vec3 color;
+        linal::real_t alpha;
+
+        DebugSphere(const linal::vec3& p, linal::real_t r, const linal::vec3& c, linal::real_t a) :
+            center(p), radius(r * 1.11_r), color(c), alpha(a) {}
+    };
+
+    void addDebugSphere(DebugSphere&& sphere);
+
 #ifdef MY_DEBUG
+    std::list<DebugSphere> m_debugSpheres;
+
     std::string custom_rendering() override;
 #endif
     
