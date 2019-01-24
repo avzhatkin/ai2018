@@ -686,8 +686,6 @@ bool ComputeLineMotion(MyStrategy::MyBot& bot, MyStrategy::NextStep& step, int t
         bot.actions.push_back(step);
     }
 
-    bot.actions.back().jump_speed = s_rules.ROBOT_MAX_JUMP_SPEED;
-
     return true;
 }
 
@@ -747,7 +745,7 @@ void MyStrategy::ComputeForward(MyBot& bot, int id)
         {
             ball_goal_dir = ball_speed_dir.normal();
         }
-        ball_goal_dir.y = 0.0_r;
+        ball_goal_dir.y = -0.1_r;
         bot.target = (ball_target_state.pos + ball_goal_dir * (s_rules.BALL_RADIUS));
         auto target = bot.target;
         target.y = next.pos.y;
