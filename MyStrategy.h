@@ -8,6 +8,7 @@
 #include "Strategy.h"
 #include <map>
 #include <list>
+#include <queue>
 #include "linal.h"
 using linal::operator""_r;
 
@@ -19,6 +20,34 @@ public:
 
     void init(const model::Rules& rules, const model::Game& game);
 
+public:
+    struct NextStep {
+        linal::vec3 pos;
+        linal::vec3 vel;
+
+        linal::vec3 target_speed;
+        linal::real_t jump_speed = 0.0_r;
+        linal::real_t nitro = 0.0_r;
+        bool use_nitro = false;
+    };
+    
+    struct MyBot {
+        enum Roles {
+            Forward,
+            Keeper
+        } role = Forward;
+        linal::vec3 target;
+        std::deque<NextStep> actions;
+    };
+
+    size_t m_ready = 0;
+
+    void ComputeForward(MyBot& bot, int id);
+
+public:
+    static int s_tick;
+
+private:
     struct DebugSphere {
         linal::vec3 center;
         linal::real_t radius;
@@ -36,25 +65,6 @@ public:
 
     std::string custom_rendering() override;
 #endif
-    
-private:
-    struct MyBot {
-        enum Roles {
-            Forward,
-            Keeper
-        } role = Forward;
-        linal::vec3 target;
-        linal::vec3 target_speed;
-        linal::real_t jump_speed = 0.0;
-        bool use_nitro = false;
-
-        bool ready = false;
-    };
-
-    size_t m_ready = 0;
-
-public:
-    static int s_tick;
 
 private:
     std::map<int, MyBot> m_bots;
