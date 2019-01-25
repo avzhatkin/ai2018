@@ -37,6 +37,7 @@ public:
             Keeper
         } role = Forward;
         linal::vec3 target;
+        int target_tick = 0;
         std::deque<NextStep> actions;
     };
 
