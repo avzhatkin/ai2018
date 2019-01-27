@@ -961,6 +961,7 @@ void MyStrategy::init(const model::Rules& rules, const Game& game)
 void MyStrategy::act(const Robot& me, const Rules& rules, const Game& game, Action& action)
 {
     static const real_t home_r = (real_t)rules.arena.goal_width / 1.4_r;
+    static const real_t k_ball = rules.ROBOT_MASS / (rules.BALL_MASS + rules.ROBOT_MASS);
 
     if (game.current_tick != s_tick)
     {
@@ -1067,21 +1068,44 @@ void MyStrategy::act(const Robot& me, const Rules& rules, const Game& game, Acti
                         continue;
                     }
 
-                    vec3 ball_goal_dir = (s_goal_pos - ball_target_state.pos).normal();
-                    vec3 ball_speed_dir = ball_target_state.vel.clamp(1.0);
-                    ball_goal_dir = ball_goal_dir * 2.0_r - ball_speed_dir;
-                    ball_goal_dir.y = min(ball_goal_dir.y, 0.0_r);
-                    ball_goal_dir.normalize();
-                    ball_goal_dir.x = -ball_goal_dir.x;
-                    ball_goal_dir.z = -ball_goal_dir.z;
-
-                    bot.target = (ball_target_state.pos + ball_goal_dir * (s_rules.BALL_RADIUS + s_rules.ROBOT_RADIUS - 0.1_r));
-                    if (bot.target.y < s_rules.ROBOT_RADIUS)
                     {
-                        real_t xz_target = sqrt((s_rules.BALL_RADIUS + s_rules.ROBOT_RADIUS) * (s_rules.BALL_RADIUS + s_rules.ROBOT_RADIUS) - s_rules.ROBOT_RADIUS * s_rules.ROBOT_RADIUS);
-                        vec2 xz = ball_target_state.pos.xz() + ball_goal_dir.xz().normal() * xz_target;
-                        bot.target = vec3(xz.x, s_rules.ROBOT_RADIUS, xz.y);
+                        vec2 ball_goal_dir = (s_goal_pos - ball_target_state.pos).xz().normal();
+                        vec2 ball_speed_2d = ball_target_state.vel.xz();
+                        vec2 hitting_normal = ball_goal_dir;
+                        vec2 ball_resulting_dir = ball_goal_dir;
+                        int cycles = 0;
+                        do 
+                        {
+                            real_t hitting_speed = bot_body.vel.xz().dot(hitting_normal) + s_rules.ROBOT_MAX_JUMP_SPEED - ball_speed_2d.dot(hitting_normal);
+                            ball_resulting_dir = (ball_speed_2d + (hitting_speed * k_ball * (1 + bot_body.s_entity_e)) * hitting_normal).normal();
+                            hitting_normal += ball_goal_dir - ball_resulting_dir;
+                            hitting_normal.normalize();
+                        } while (ball_resulting_dir.dot(ball_goal_dir) < 0.95_r && (++cycles < 10));
+                        vec3 target_dir = vec3(-hitting_normal.x, min(max(ball_target_state.vel.y, -1.0_r), 0.0_r), -hitting_normal.y).normal();
+                        bot.target = (ball_target_state.pos + target_dir * (s_rules.BALL_RADIUS + s_rules.ROBOT_RADIUS - 0.1_r));
+                        if (bot.target.y < s_rules.ROBOT_RADIUS)
+                        {
+                            real_t xz_target = sqrt((s_rules.BALL_RADIUS + s_rules.ROBOT_RADIUS) * (s_rules.BALL_RADIUS + s_rules.ROBOT_RADIUS) - s_rules.ROBOT_RADIUS * s_rules.ROBOT_RADIUS);
+                            vec2 xz = ball_target_state.pos.xz() - hitting_normal * xz_target;
+                            bot.target = vec3(xz.x, s_rules.ROBOT_RADIUS, xz.y);
+                        }
                     }
+
+//                     vec3 ball_goal_dir = (s_goal_pos - ball_target_state.pos).normal();
+//                     vec3 ball_speed_dir = ball_target_state.vel.clamp(1.0);
+//                     ball_goal_dir = ball_goal_dir * 2.0_r - ball_speed_dir;
+//                     ball_goal_dir.y = min(ball_goal_dir.y, 0.0_r);
+//                     ball_goal_dir.normalize();
+//                     ball_goal_dir.x = -ball_goal_dir.x;
+//                     ball_goal_dir.z = -ball_goal_dir.z;
+// 
+//                     bot.target = (ball_target_state.pos + ball_goal_dir * (s_rules.BALL_RADIUS + s_rules.ROBOT_RADIUS - 0.1_r));
+//                     if (bot.target.y < s_rules.ROBOT_RADIUS)
+//                     {
+//                         real_t xz_target = sqrt((s_rules.BALL_RADIUS + s_rules.ROBOT_RADIUS) * (s_rules.BALL_RADIUS + s_rules.ROBOT_RADIUS) - s_rules.ROBOT_RADIUS * s_rules.ROBOT_RADIUS);
+//                         vec2 xz = ball_target_state.pos.xz() + ball_goal_dir.xz().normal() * xz_target;
+//                         bot.target = vec3(xz.x, s_rules.ROBOT_RADIUS, xz.y);
+//                     }
 
                     if (ball_target_state.pos.z < -(s_arena.depth / 2.0_r)
                         && ball_target_state.vel.z < 0
@@ -1323,8 +1347,6 @@ void MyStrategy::act(const Robot& me, const Rules& rules, const Game& game, Acti
                     vec3 safe_dir = v_left > v_right ? safe_dir_left : safe_dir_right;
 
                     vec3 speed_delta = ball_vel - ball_vel.project(safe_dir);
-
-                    real_t k_ball = s_rules.ROBOT_MASS / (s_rules.BALL_MASS + s_rules.ROBOT_MASS);
 
                     vec3 impulse = speed_delta / k_ball;
 
